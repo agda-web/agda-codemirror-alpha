@@ -74,29 +74,25 @@ function genHoleRewritingSpecs(descs) {
 export function buildMarkers(state, specs) {
   const marks = [], holes = [], goalDescs = []
   for (const spec of specs) {
-    const [begin, end, meta] = spec
-    const type = meta[0].s
+    const [begin, end, [types, ...meta]] = spec
+    const tokenTypes = types.map(t => t.s)
 
     const slice = state.doc.sliceString(begin, end)
     let cgGoal = slice.match(/^(?:\?|{!([\s\S]*)!})$/)
+    let classNames = tokenTypes.map(type => themeClass('agda-' + type))
 
-    if (cgGoal) {
+    if (cgGoal && tokenTypes.indexOf('symbol') >= 0) {
       // goal objects must be distinct, so do not cache them
       const mark = Decoration.mark({
-        class: themeClass(classNameForHoles),
+        // tagName: 'div',
+        class: [...classNames, themeClass(classNameForHoles)].join(' '),
       })
       holes.push(mark.range(begin, end))
       goalDescs.push({ begin, end, text: cgGoal[1] })
     } else {
-      let className = 'agda-' + type
-      let mark
-      if (decoSpecCache.has(className)) {
-        mark = decoSpecCache.get(className)
-      } else {
-        decoSpecCache.set(className, mark = Decoration.mark({
-          class: themeClass(className)
-        }))
-      }
+      let mark = Decoration.mark({
+          class: classNames.join(' ')
+        })
       marks.push(mark.range(begin, end))
     }
   }
@@ -143,27 +139,26 @@ class SyntaxState {
       const iter = holes.iter()
       let newWidgets = []
 
-      let idx = 0
+      // iterates over holes; insert a new goal marker whenever one is not found in the WeakMap
+      let hIdx = 0, gpIdx = 0
       while (iter.value) {
-        const pos = update.goalPoints[idx]
-
-        // XXXX: pairs only non-paired for now
         if (!this._holeToGoalMap.has(iter.value)) {
           const widget = Decoration.widget({
             // this fortunately relies on Agda's current behavior that
             // goal labels are set before highlighting
-            widget: new GoalMarker(this.goalLabels[idx]),
+            widget: new GoalMarker(this.goalLabels[hIdx]),
             side: 1,
           })
-          // FIXME: hack; but this causes glitches sometimes
+          // FIXME: we should not change readonly attributes
           widget.mapMode = MapMode.TrackBefore
-          newWidgets.push(widget.range(pos))
+          newWidgets.push(widget.range(update.goalPoints[gpIdx]))
 
           this._holeToGoalMap.set(iter.value, widget)
+          gpIdx++
         }
 
+        hIdx++
         iter.next()
-        idx++
       }
 
       console.log('add new', goals, newWidgets)

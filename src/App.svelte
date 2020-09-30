@@ -92,12 +92,11 @@ function handleAgdaResponse(msg) {
     })
     break
   case 'agda2-highlight-add-annotations':
-    const [remove, ...args_rest] = args
-    if (args_rest[0] == null) {
-      console.warn('Highlight fails', args_rest)
+    const [remove, ...specs] = args
+    if (specs[0] == null) {
+      console.warn('Highlight fails', specs)
       return
     }
-    const specs = args_rest.map(([a, b, [k]]) => [a, b, k])
     dispatchHighlight(view, specs)
     break
   case 'agda2-status-action':

@@ -72,6 +72,8 @@ export const agdaTheme = EditorView.theme({
   'agda-record': { color: blue },
   'agda-argument': { color: darkGray },
 
+  'agda-unsolvedmeta': { backgroundColor: `${yellow} !important` },
+
   // pp = post-processing
   [classNameForHoles]: { backgroundColor: lightGreen },
   '\u037c-pp-marker': { backgroundColor: `${lightGreen}80` },
