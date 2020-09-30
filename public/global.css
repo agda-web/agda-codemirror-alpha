@@ -1,0 +1,37 @@
+html, body {
+  box-sizing: border-box;
+}
+
+* { box-sizing: inherit; }
+
+html {
+  overflow-y: hidden;
+  font-family: 'Source Sans Pro';
+}
+
+body {
+  max-width: calc(100vw - 4em - 16px);
+  margin: 0 16px 0 4em;
+}
+
+@font-face {
+  font-family: 'Iosevka';
+  src: local(Iosevka),
+       url(fonts/iosevka-regular.woff2);
+  font-weight: normal;
+  font-style: normal;
+  /* unsupported in Chrome; yucks!! */
+  font-feature-settings: 'calt' off;
+  display: swap;
+}
+
+@font-face {
+  font-family: 'Iosevka';
+  src: local(Iosevka Bold),
+       url(fonts/iosevka-bold.woff2);
+  font-weight: bold;
+  font-style: normal;
+  /* unsupported in Chrome; yucks!! */
+  font-feature-settings: 'calt' off;
+  display: swap;
+}
