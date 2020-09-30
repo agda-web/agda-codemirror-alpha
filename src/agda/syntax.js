@@ -19,7 +19,7 @@ import {
 import { Range, RangeSet, RangeSetBuilder } from '@codemirror/next/rangeset'
 import { myAutocompletion } from './autocomplete'
 import { WidgetType } from '@codemirror/next/view'
-import { toHaskellRange } from './utils'
+import { getCursorPos, toHaskellRange } from './utils'
 
 export const agdaLanguageData = EditorState.globalLanguageData.of({
   closeBrackets: { brackets: ['(', '{', '"', "'"] },

@@ -73,7 +73,6 @@ export function sendRefine(view) {
 }
 
 export function sendHighlightOnGoal(view, goalIndex, spec) {
-  console.log('sendHighlightOnGoal', goalIndex, spec)
   const range = toHaskellRange(view.state.doc, spec.from, spec.to)
   sendMessage(`IOTCM "/tmp/my.agda" NonInteractive Direct `
     + `(Cmd_highlight ${goalIndex} ${range} ${asString(spec.body)})`)

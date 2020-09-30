@@ -149,8 +149,13 @@ export function goToPrevGoal(view) {
 
 function just(f) {
   return (...args) => {
-    f(...args)
-    return true
+    try {
+      f(...args)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      return true
+    }
   }
 }
 
