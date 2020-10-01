@@ -2,6 +2,7 @@
 import { onMount, onDestroy, createEventDispatcher } from 'svelte'
 
 import {EditorState, tagExtension} from '@codemirror/next/state'
+// import {EditorView, keymap, highlightSpecialChars, drawSelection, indentOnInput} from '@codemirror/next/view'
 import {EditorView, keymap, highlightSpecialChars, multipleSelections, indentOnInput} from '@codemirror/next/view'
 import {history, historyKeymap} from '@codemirror/next/history'
 import {foldGutter, foldKeymap} from '@codemirror/next/fold'
@@ -38,6 +39,8 @@ function buildEditorView(parent) {
         history(),
         foldGutter(),
         multipleSelections(),
+        // drawSelection(),
+        // EditorState.allowMultipleSelections.of(true),
         indentOnInput(),
 
         myCodeMirrorTheme,

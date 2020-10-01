@@ -100,15 +100,16 @@ const keydownHandler = EditorView.domEventHandlers({
     const scope = curPrefix[curPrefix.length - 1] == 'x' ? 'agdax' : 'agda'
 
     // then, proceed with Agda shortcut handling
-    console.log(`Processing key sequence ${curPrefix} + ${name}`)
+    const prefixDesc = [...curPrefix].map(x => 'C-' + x).join(' ')
+    let keyDesc = name
+    if (event.ctrlKey) keyDesc = 'C-' + keyDesc
+    if (event.altKey || event.metaKey) keyDesc = 'M-' + keyDesc
+    console.log(`Processing key sequence [${prefixDesc}] ${keyDesc}`)
+
     const processed = runScopeHandlers(view, event, scope)
     if (processed) {
       return accept(null)
     } else {
-      const prefixDesc = [...curPrefix].map(x => 'C-' + x).join(' ')
-      let keyDesc = name
-      if (event.ctrlKey) keyDesc = 'C-' + keyDesc
-      if (event.altKey || event.metaKey) keyDesc = 'M-' + keyDesc
       return reject(`[${prefixDesc} ${keyDesc}] does not name a command.`)
     }
   }
