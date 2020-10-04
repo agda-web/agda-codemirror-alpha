@@ -5,7 +5,6 @@ html, body {
 * { box-sizing: inherit; }
 
 html {
-  overflow-y: hidden;
   font-family: 'Source Sans Pro';
 }
 

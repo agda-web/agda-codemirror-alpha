@@ -40,6 +40,7 @@ export function agdaSyntax(options = {}) {
 
 export const classNameForHoles = '\u037c-pp-hole'
 
+// TODO: re-consider highlight caching policy
 const decoSpecCache = new Map()
 
 class GoalMarker extends WidgetType {
@@ -84,17 +85,16 @@ export function buildMarkers(state, specs) {
     if (cgGoal && tokenTypes.indexOf('symbol') >= 0) {
       // goal objects must be distinct, so do not cache them
       const mark = Decoration.mark({
-        // tagName: 'div',
-        class: [...classNames, themeClass(classNameForHoles)].join(' '),
+        class: themeClass(classNameForHoles),
       })
       holes.push(mark.range(begin, end))
       goalDescs.push({ begin, end, text: cgGoal[1] })
-    } else {
-      let mark = Decoration.mark({
-          class: classNames.join(' ')
-        })
+    }// else {
+      const mark = Decoration.mark({
+        class: classNames.join(' ')
+      })
       marks.push(mark.range(begin, end))
-    }
+    //}
   }
 
   const rewriteSpecs = genHoleRewritingSpecs(goalDescs)
@@ -250,25 +250,23 @@ function hasEffect(trs, effect) {
 
 class Highlighter {
   constructor(view) {
-    this.marks = Decoration.none
-    this.holes = Decoration.none
-    this.goals = Decoration.none
+    this.decorations = Decoration.none
+  }
+
+  getProvider(update) {
+    throw new TypeError('getProvider() is not implemented.')
+  }
+
+  requiresUpdate(update) {
+    return update.transactions.some(tr => tr.effects.some(e => e.is(setSyntax)))
   }
 
   update(update) {
     // TODO: is it possible to integrate w/ undo stack?
-    if (update.docChanged || update.viewportChanged || hasEffect(update.transactions, setSyntax)) {
-      const value = update.state.field(syntaxState)
-
-      this.marks = this.applyHighlight(update.view, value.marks)
-      // be lazy; assuming holes and goals are not too many
-      this.holes = value.holes
-      this.goals = value.goals
+    if (update.docChanged || update.viewportChanged || this.requiresUpdate(update)) {
+      this.decorations = this.applyHighlight(update.view, this.getProvider(update))
 
       // FIXME: should add an effect (annotation?) to trace on deco changes
-      // if (this.onupdate) {
-      //   this.onupdate(this)
-      // }
     }
   }
 
@@ -282,8 +280,17 @@ class Highlighter {
   }
 }
 
-export const highlighter = ViewPlugin.fromClass(Highlighter, {
-  decorations: [v => v.marks, v => v.holes, v => v.goals]
+export const highlighter = ['holes', 'goals', 'marks'].map(propName => {
+  const className = propName.charAt(0).toUpperCase() + propName.slice(1) + 'Highlighter'
+  const dummy = {}
+  dummy[className] = class extends Highlighter {
+    getProvider(update) {
+      return update.state.field(syntaxState)[propName]
+    }
+  }
+  return ViewPlugin.fromClass(dummy[className], {
+    decorations: v => v.decorations
+  })
 })
 
 export function getGoalAtCursor(state) {

@@ -121,11 +121,11 @@ onDestroy(() => {
 })
 </script>
 
-<div style="height: 100%" bind:this={wrapper}>
+<div class="codemirror" bind:this={wrapper}>
 </div>
 
 <style>
-:global(.cm-wrap) {
+.codemirror, :global(.cm-wrap) {
   /* XXX: when > CM's backed drawn area (300px?), pgup/pgdn do not always work */
   height: 100%;
 }

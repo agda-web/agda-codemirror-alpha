@@ -142,21 +142,23 @@ window.showSyntaxState = () => {
 </script>
 
 <main id="main">
-  <h1 id="site-title">Agda mode in CodeMirror 6<span class="rev">2020<br>0930</span></h1>
+  <h1 id="site-title">Agda mode in CodeMirror 6<span class="rev">2020<br>1005</span></h1>
   <div id="left-side">
-    <div>
+    <div class="tools">
       <ConnectionEditor socket={socket}></ConnectionEditor>
       {#each commands as {command, label, desc}}
       <button on:click={command}>{label} <span class="buttonDesc">{desc}</span></button>{' '}
       {/each}
     </div>
-    <div style="min-width: 0">
-      <CodeMirror initialContent={initialContent} bind:this={editor} bind:view={view}>
-      </CodeMirror>
+    <div class="codemirror-wrapper-out">
+      <div class="codemirror-wrapper-in">
+        <CodeMirror initialContent={initialContent} bind:this={editor} bind:view={view}>
+        </CodeMirror>
+      </div>
     </div>
   </div>
   <div id="right-side">
-    <div style="overflow: auto">
+    <div class="agda-info">
       <p class="agda-info-title">{agdaInfoTitle}</p>
       <pre class="agda-info-content">{agdaInfoContent}</pre>
     </div>
@@ -191,23 +193,47 @@ window.showSyntaxState = () => {
   display: grid;
   grid-template-columns: 4fr 3fr;
   grid-column-gap: 16px;
-  height: 100vh;
-  grid-template-rows: 100vh;
 }
 
 #left-side {
-  display: grid;
-  grid-template-rows: min-content minmax(0, auto);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.tools button {
+  /* XXX: https://github.com/codemirror/codemirror.next/issues/305 */
+  line-height: 18px;
+}
+
+.codemirror-wrapper-out {
+  flex: 1 1 auto;
+  position: relative;
+}
+
+.codemirror-wrapper-in {
+  position: absolute;
+  left: 0; width: 100%;
+  top: 0; height: 100%;
 }
 
 #right-side {
-  display: grid;
-  grid-template-rows: 9fr minmax(100px, 1fr);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-width: 0;
+}
+
+.agda-info {
+  flex: 1 1 auto;
+  min-height: 80px;
+  overflow: auto;
 }
 
 .log {
   display: block;
   width: 100%;
+  min-height: 100px;
 }
 
 .agda-info-title {
