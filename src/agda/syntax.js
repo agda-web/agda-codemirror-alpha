@@ -118,6 +118,7 @@ class SyntaxState {
     let {marks, holes, goals} = this
     if (update.marks) {
       marks = marks.update({add: update.marks})
+      // TODO: canonalize marks so that marks of the same kind are merged together
     }
     if (update.clearMarksAt) {
       // TODO: refactor interfaces; this is meant to

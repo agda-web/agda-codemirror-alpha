@@ -48,7 +48,7 @@ const keydownHandler = EditorView.domEventHandlers({
     // with one of conditions below:
     //   1. There is a non-empty selection, to minimize impacts to existing
     //      bindings that work with text selections
-    //   2. The input cannot be a prefix of any key sequences
+    //   2. The input cannot be a prefix of any key sequences (Ctrl-R is exception)
     const curPrefix = view.state.field(prefix).chars
 
     // early rejection of irrelevant keys
@@ -87,6 +87,11 @@ const keydownHandler = EditorView.domEventHandlers({
         }
         return accept(name)
       } else if (curPrefix == '') {
+        if (name == 'r') {
+          // prevent C-r to refresh
+          console.log('%c>>> Please use F5 or Ctrl-Shift-R to refresh <<<', 'color: yellow')
+          return true
+        }
         // cond. 2
         return false
       }

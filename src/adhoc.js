@@ -31,7 +31,7 @@ export function sendContext(view) {
     return
   }
   sendMessage(`IOTCM "/tmp/my.agda" None Direct (` +
-    `Cmd_goal_type_context AsIs ${goalDesc.index} ${content.range} ${asString(content.body)}` +
+    `Cmd_goal_type_context Simplified ${goalDesc.index} noRange ${asString(content.body)}` +
   `)`)
 }
 
@@ -52,7 +52,7 @@ export function sendContextAndInferredType(view) {
   })
 
   sendMessage(`IOTCM "/tmp/my.agda" None Direct (` +
-    `Cmd_goal_type_context_infer AsIs ${goalDesc.index} ${content.range} ${asString(content.body)}` +
+    `Cmd_goal_type_context_infer Simplified ${goalDesc.index} ${content.range} ${asString(content.body)}` +
   `)`)
 }
 
