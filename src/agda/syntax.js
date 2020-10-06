@@ -153,7 +153,7 @@ class SyntaxState {
         this._holeToGoalMap.set(hole, widget)
       })
 
-      unboundGoalLabels = this.unboundGoalLabels.filter(l => unboundSet.has(l))
+      unboundGoalLabels = (this.unboundGoalLabels || []).filter(l => unboundSet.has(l))
       goals = goals.update({add: newWidgets})
     }
 
