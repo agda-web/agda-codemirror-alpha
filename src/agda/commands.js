@@ -1,5 +1,5 @@
 import { EditorState, EditorSelection } from '@codemirror/next/state'
-import { setSyntax, syntaxState, storeGoalLabels, buildMarkers, parseHoleContent } from './syntax'
+import { setSyntax, syntaxState, storeGoalLabels, buildMarkers, bindGoalMarkers, parseHoleContent } from './syntax'
 import { changeText } from './status-bar'
 import { fromUTF8Ranges, getCursorPos } from './utils'
 
@@ -14,14 +14,14 @@ import {
 
 function genHoleRewritingSpecs(descs) {
   const ret = []
-  for (const {begin: from, end: to, text} of descs) {
+  for (const {from, to, text: c} of descs) {
     let insert
-    if (text == null) {
+    if (c == null) {
       insert = '{!  !}'
-    } else if (text.trim() == '') {
+    } else if (c.trim() == '') {
       insert = '{!' + c.padEnd(2) + '!}'
     } else {
-      insert = `{!${text}!}`
+      insert = `{!${c}!}`
     }
     ret.push({ from, to, insert })
   }
@@ -54,28 +54,48 @@ export function dispatchHighlight(view, specs) {
   }
 
   const arranged = convertAgdaRanges(doc, specs)
-  const {marks, holes, goalPoints, _rewriteDesc} = buildMarkers(view.state, arranged)
+  const {marks, holes} = buildMarkers(view.state, arranged)
   view.dispatch({ effects: setSyntax.of({marks, holes}) })
+
+  const text = `Highlighted ${specs.length} ranges with doc length ${view.state.doc.length}.`
+  changeStatusBarText(view, text)
+}
+
+export function dispatchGoals(view, numbering) {
+  const {doc} = view.state
+
+  if (numbering != null) {
+    view.dispatch({
+      effects: storeGoalLabels.of(numbering)
+    })
+  }
+
+  const goalDescs = bindGoalMarkers(view.state)
+
+  // because we hack on PointDecoration to set mapMode to TrackBefore,
+  // we cannot drop highlight & goals and apply changes afterwards, otherwise
+  // they will get deleted instantly
+
+  const rewriteSpecs = genHoleRewritingSpecs(goalDescs.map(desc => ({
+    ...desc, text: desc.hole.spec._holeContent
+  })))
+  const _rewriteDesc = view.state.changes(rewriteSpecs)
+
+  const goalPoints = goalDescs.map(desc => ({
+    ...desc, point: _rewriteDesc.mapPos(desc.to)
+  }))
+
   view.dispatch({
     changes: _rewriteDesc,
     // XXX: update only when the cursor is in/touching one of the rewriting ranges
     // selection: origSel,
   })
   view.dispatch({ effects: setSyntax.of({goalPoints}) })
-
-  const verbose = `Highlighted ${specs.length} ranges with doc length ${view.state.doc.length}.`
-  changeStatusBarText(view, verbose)
 }
 
 export function changeStatusBarText(view, text) {
   view.dispatch({
     effects: changeText.of(text)
-  })
-}
-
-export function labelGoals(view, xs) {
-  view.dispatch({
-    effects: storeGoalLabels.of(xs)
   })
 }
 

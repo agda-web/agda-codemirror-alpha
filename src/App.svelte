@@ -9,7 +9,7 @@ import ConnectionEditor from './ConnectionEditor.svelte'
 import { EditorSelection } from '@codemirror/next/state'
 import { initialContent } from './corpus'
 import * as adhoc from './adhoc'
-import { dispatchHighlight, labelGoals, goToNextGoal, goToPrevGoal, getHoleByIndex, replaceHoleWith } from './agda/commands'
+import { dispatchHighlight, dispatchGoals, goToNextGoal, goToPrevGoal, getHoleByIndex, replaceHoleWith } from './agda/commands'
 import { fromUTF8Offset, getCursorPos } from './agda/utils'
 import { syntaxState } from './agda/syntax'
 
@@ -59,7 +59,7 @@ function handleAgdaResponse(msg) {
     break
   case 'agda2-goals-action':
     const [numbering] = args
-    labelGoals(view, numbering)
+    dispatchGoals(view, numbering)
     break
   case 'agda2-give-action':
     const [goalIdx, instr] = args
@@ -97,7 +97,18 @@ function handleAgdaResponse(msg) {
       console.warn('Highlight fails', specs)
       return
     }
+    // get mark state before applying, and re-emit if required.
+    // when the file is load at the first time,
+    // goal action is received BEFORE highlight action
+    const {marks} = view.state.field(syntaxState)
+    const isFreshLoad = (!marks.size)
+    if (isFreshLoad) {
+      console.log('A fresh file load is performed; will also bind goal markers later')
+    }
     dispatchHighlight(view, specs)
+    if (isFreshLoad) {
+      dispatchGoals(view, null)
+    }
     break
   case 'agda2-status-action':
     // log.update(x => x + `Set status: "${args[0]}"` + '\n')
@@ -127,8 +138,8 @@ window.clearHighlight = () => {
   dispatchHighlight(view, null)
 }
 
-window.showSyntaxState = () => {
-  console.log(view.state.field(syntaxState))
+window.getSyntaxState = () => {
+  return view.state.field(syntaxState)
 }
 
 

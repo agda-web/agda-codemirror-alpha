@@ -51,7 +51,7 @@ export function sendContextAndInferredType(view) {
     effects: setSyntax.of({ clearMarksAt: goalDesc.widget })
   })
 
-  sendMessage(`IOTCM "/tmp/my.agda" None Direct (` +
+  sendMessage(`IOTCM "/tmp/my.agda" Interactive Direct (` +
     `Cmd_goal_type_context_infer Simplified ${goalDesc.index} ${content.range} ${asString(content.body)}` +
   `)`)
 }

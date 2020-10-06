@@ -56,24 +56,8 @@ class GoalMarker extends WidgetType {
   }
 }
 
-function genHoleRewritingSpecs(descs) {
-  const ret = []
-  for (const {begin: from, end: to, text: c} of descs) {
-    let insert
-    if (c == null) {
-      insert = '{!  !}'
-    } else if (c.trim() == '') {
-      insert = '{!' + c.padEnd(2) + '!}'
-    } else {
-      insert = `{!${c}!}`
-    }
-    ret.push({ from, to, insert })
-  }
-  return ret
-}
-
 export function buildMarkers(state, specs) {
-  const marks = [], holes = [], goalDescs = []
+  const marks = [], holes = []
   for (const spec of specs) {
     const [begin, end, [types, ...meta]] = spec
     const tokenTypes = types.map(t => t.s)
@@ -86,26 +70,48 @@ export function buildMarkers(state, specs) {
       // goal objects must be distinct, so do not cache them
       const mark = Decoration.mark({
         class: themeClass(classNameForHoles),
+        _holeContent: cgGoal[1],
       })
       holes.push(mark.range(begin, end))
-      goalDescs.push({ begin, end, text: cgGoal[1] })
-    }// else {
-      const mark = Decoration.mark({
-        class: classNames.join(' ')
-      })
-      marks.push(mark.range(begin, end))
-    //}
+    }
+
+    const mark = Decoration.mark({
+      class: classNames.join(' ')
+    })
+    marks.push(mark.range(begin, end))
   }
 
-  const rewriteSpecs = genHoleRewritingSpecs(goalDescs)
-  const _rewriteDesc = state.changes(rewriteSpecs)
+  return {marks, holes}
+}
 
-  // because we hack on PointDecoration to set mapMode to TrackBefore,
-  // we cannot drop highlight & goals and apply changes afterwards, otherwise
-  // they will get deleted instantly
-  const goalPoints = goalDescs.map(desc => _rewriteDesc.mapPos(desc.end))
+// provided goalLabels, bind all stray goal markers by matching unbound goal labels
+// returns a list of instructions so they may be created after some rewriting
+//
+// note that Agda may forget numbering some goals,
+// and they will be created with undefined label
+export function bindGoalMarkers(state) {
+  const goalDescs = []
 
-  return {marks, holes, goalPoints, _rewriteDesc}
+  const {holes, unboundGoalLabels, _holeToGoalMap} = state.field(syntaxState)
+  let labelIdx = 0
+
+  const iter = holes.iter()
+  while (iter.value) {
+    const {from, to, value} = iter
+    if (!_holeToGoalMap.has(value)) {
+      const label = unboundGoalLabels[labelIdx++]
+      const widget = Decoration.widget({
+        widget: new GoalMarker(label),
+        side: 1,
+      })
+      // FIXME: we should not change readonly attributes
+      widget.mapMode = MapMode.TrackBefore
+      goalDescs.push({ from, to, widget, label, hole: value })
+    }
+    iter.next()
+  }
+
+  return goalDescs
 }
 
 // maintaining indexed, append-only decos that syncs with the state
@@ -115,7 +121,8 @@ class SyntaxState {
   }
 
   update(update) {
-    let {marks, holes, goals} = this
+    let {marks, holes, goals, unboundGoalLabels} = this
+
     if (update.marks) {
       marks = marks.update({add: update.marks})
       // TODO: canonalize marks so that marks of the same kind are merged together
@@ -137,43 +144,28 @@ class SyntaxState {
       holes = holes.update({add: update.holes})
     }
     if (update.goalPoints) {
-      const iter = holes.iter()
-      let newWidgets = []
+      const newWidgets = []
+      const unboundSet = new Set(this.unboundGoalLabels)
 
-      // iterates over holes; insert a new goal marker whenever one is not found in the WeakMap
-      let hIdx = 0, gpIdx = 0
-      while (iter.value) {
-        if (!this._holeToGoalMap.has(iter.value)) {
-          const widget = Decoration.widget({
-            // this fortunately relies on Agda's current behavior that
-            // goal labels are set before highlighting
-            widget: new GoalMarker(this.goalLabels[hIdx]),
-            side: 1,
-          })
-          // FIXME: we should not change readonly attributes
-          widget.mapMode = MapMode.TrackBefore
-          newWidgets.push(widget.range(update.goalPoints[gpIdx]))
+      update.goalPoints.forEach(({widget, point, hole, label}) => {
+        newWidgets.push(widget.range(point))
+        unboundSet.delete(label)
+        this._holeToGoalMap.set(hole, widget)
+      })
 
-          this._holeToGoalMap.set(iter.value, widget)
-          gpIdx++
-        }
-
-        hIdx++
-        iter.next()
-      }
-
-      console.log('add new', goals, newWidgets)
-
-      // TODO: assert #holes == #goals == #labels
-
+      unboundGoalLabels = this.unboundGoalLabels.filter(l => unboundSet.has(l))
       goals = goals.update({add: newWidgets})
     }
 
-    return new SyntaxState({...this, marks, holes, goals})
+    return new SyntaxState({...this, marks, holes, goals, unboundGoalLabels})
   }
 
   storeIndexes(goalLabels) {
-    return new SyntaxState({...this, goalLabels})
+    const oldLabels = new Set(this.goalLabels || [])
+    const unboundGoalLabels = goalLabels.filter(l => {
+      return (!oldLabels.has(l) || (this.unboundGoalLabels.indexOf(l) >= 0))
+    })
+    return new SyntaxState({...this, goalLabels, unboundGoalLabels})
   }
 
   map(tr) {
@@ -192,6 +184,7 @@ SyntaxState.initial = new SyntaxState({
   goals: Decoration.none,
   _holeToGoalMap: new WeakMap(),
   goalLabels: null,
+  unboundGoalLabels: null,
 })
 
 export const syntaxState = StateField.define({
@@ -215,9 +208,9 @@ export const syntaxState = StateField.define({
 
         const eliminated = new Set()
         if (value.goalLabels) {
-          for (const l of value.goalLabels) {
-            if (newLabels.indexOf(l) < 0) {
-              eliminated.add(l)
+          for (const label of value.goalLabels) {
+            if (newLabels.indexOf(label) < 0) {
+              eliminated.add(label)
             }
           }
         }
