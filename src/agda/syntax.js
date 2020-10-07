@@ -63,7 +63,7 @@ export function buildMarkers(state, specs) {
     const tokenTypes = types.map(t => t.s)
 
     const slice = state.doc.sliceString(begin, end)
-    let cgGoal = slice.match(/^(?:\?|{!([\s\S]*)!})$/)
+    const cgGoal = slice.match(/^(?:\?|{!([\s\S]*)!})$/)
     let classNames = tokenTypes.map(type => themeClass('agda-' + type))
 
     if (cgGoal && tokenTypes.indexOf('symbol') >= 0) {
@@ -73,10 +73,16 @@ export function buildMarkers(state, specs) {
         _holeContent: cgGoal[1],
       })
       holes.push(mark.range(begin, end))
+
+      // do not apply symbol styling for holes
+      classNames = classNames.filter(x => x != 'symbol')
     }
 
     const mark = Decoration.mark({
-      class: classNames.join(' ')
+      class: classNames.join(' '),
+      _tokenTypes: tokenTypes,
+      _content: slice,
+      _meta: meta,
     })
     marks.push(mark.range(begin, end))
   }
