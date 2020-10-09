@@ -60,11 +60,10 @@ export function buildMarkers(state, specs) {
   const marks = [], holes = []
   for (const spec of specs) {
     const [begin, end, [types, ...meta]] = spec
-    const tokenTypes = types.map(t => t.s)
+    let tokenTypes = types.map(t => t.s)
 
     const slice = state.doc.sliceString(begin, end)
     const cgGoal = slice.match(/^(?:\?|{!([\s\S]*)!})$/)
-    let classNames = tokenTypes.map(type => themeClass('agda-' + type))
 
     if (cgGoal && tokenTypes.indexOf('symbol') >= 0) {
       // goal objects must be distinct, so do not cache them
@@ -75,16 +74,19 @@ export function buildMarkers(state, specs) {
       holes.push(mark.range(begin, end))
 
       // do not apply symbol styling for holes
-      classNames = classNames.filter(x => x != 'symbol')
+      tokenTypes = tokenTypes.filter(x => x != 'symbol')
     }
 
-    const mark = Decoration.mark({
-      class: classNames.join(' '),
-      _tokenTypes: tokenTypes,
-      _content: slice,
-      _meta: meta,
-    })
-    marks.push(mark.range(begin, end))
+    if (tokenTypes.length) {
+      let classNames = tokenTypes.map(type => themeClass('agda-' + type))
+      const mark = Decoration.mark({
+        class: classNames.join(' '),
+        _tokenTypes: tokenTypes,
+        _content: slice,
+        _meta: meta,
+      })
+      marks.push(mark.range(begin, end))
+    }
   }
 
   return {marks, holes}
@@ -314,7 +316,7 @@ export function getGoalAtCursor(state) {
 
 export function parseHoleContent(state, hole) {
   const slice = state.sliceDoc(hole.from, hole.to)
-  const cg = slice.match(/^(\s*{!\s*)(.+?)(\s*!}\s*)$/)
+  const cg = slice.match(/^(\s*{!\s*)([\s\S]+?)(\s*!}\s*)$/)
 
   if (cg == null) {
     return null

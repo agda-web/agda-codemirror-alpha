@@ -132,6 +132,30 @@ onMount(() => {
   })
 })
 
+let agdaInfoContentSplitted = []
+
+$: {
+  const contents = [], titles = []
+  let matched
+  let start = 0
+
+  const delim = /^—+(\s+\S+\s+)?—+$\n/gm
+  while (matched = delim.exec(agdaInfoContent)) {
+    contents.push(agdaInfoContent.slice(start, matched.index))
+    titles.push(matched[1] || null)
+    start = delim.lastIndex
+  }
+  contents.push(agdaInfoContent.slice(start))
+
+  agdaInfoContentSplitted = contents.map((content, idx) => {
+    const title = idx > 0 ? titles[idx - 1] : null
+    return {
+      content,
+      ...(title && {title}),
+    }
+  })
+}
+
 // debug functions
 
 window.clearHighlight = () => {
@@ -153,7 +177,7 @@ window.getSyntaxState = () => {
 </script>
 
 <main id="main">
-  <h1 id="site-title">Agda mode in CodeMirror 6<span class="rev">2020<br>1005</span></h1>
+  <h1 id="site-title">Agda mode in CodeMirror 6<span class="rev">2020<br>1010</span></h1>
   <div id="left-side">
     <div class="tools">
       <ConnectionEditor socket={socket}></ConnectionEditor>
@@ -171,7 +195,11 @@ window.getSyntaxState = () => {
   <div id="right-side">
     <div class="agda-info">
       <p class="agda-info-title">{agdaInfoTitle}</p>
-      <pre class="agda-info-content">{agdaInfoContent}</pre>
+      <pre class="agda-info-content">{#each agdaInfoContentSplitted as {title, content}, idx}<!--
+      -->{#if idx != 0}<hr>{/if}<!--
+      -->{#if title}<strong>{title.trim()}</strong><br>{/if}<!--
+      -->{content}<!--
+      -->{/each}</pre>
     </div>
     <textarea bind:this={logTextArea} class="log">{$log}</textarea>
   </div>
@@ -238,7 +266,8 @@ window.getSyntaxState = () => {
 .agda-info {
   flex: 1 1 auto;
   min-height: 80px;
-  overflow: auto;
+  overflow-y: auto;
+  width: 100%;
 }
 
 .log {
@@ -250,6 +279,19 @@ window.getSyntaxState = () => {
 .agda-info-title {
   font-size: 1.2em;
   font-weight: 600;
+}
+
+.agda-info-content {
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.agda-info-content hr {
+  --thick: calc(5px / 3);
+  height: var(--thick);
+  border: none;
+  margin: calc((1.25em - var(--thick)) / 2) 0;
+  background: black;
 }
 
 pre {

@@ -3,7 +3,7 @@ import { getCursorPos, toUTF8Coords, toHaskellRange } from './agda/utils'
 import { syntaxState, setSyntax, parseHoleContent, getGoalAtCursor } from './agda/syntax'
 
 function asString(s) {
-  return `"${s.replace(/\//g, '\\\\').replace(/"/g, '\\"')}"`
+  return `"${s.replace(/\//g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`
 }
 
 export function sendSyncRequest(view) {
